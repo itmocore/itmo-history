@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Заголовок динамически меняется через building.js -->
+  <title>Корпус ИТМО — История зданий</title>
+  <meta name="description" content="Подробная история корпуса ИТМО в Санкт-Петербурге: архитектура, хронология, интересные факты.">
+  
+  <!-- Leaflet для мини-карты корпуса -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- Общий стиль -->
+  <link rel="stylesheet" href="../css/style.css">
+  
+  <!-- Дополнительные стили страницы корпуса -->
+  <style>
+    .building-map-section {
+      margin: 48px 0;
+      border-radius: 16px;
+      overflow: hidden;
+      height: 280px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+    #building-map { width: 100%; height: 100%; }
+    .role-block {
+      background: var(--accent-light);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-top: 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .role-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+    .role-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .role-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body class="building-page">
+
+  <!-- Навигация -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-logo">
+        <div class="nav-logo-badge">ИТ</div>
+        <div>
+          <div class="nav-logo-text">ИТМО</div>
+          <div class="nav-logo-sub">История корпусов</div>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#map-section">Карта</a></li>
+        <li><a href="../index.html#buildings-section">Все корпуса</a></li>
+        <li><a href="../index.html#about-section">О проекте</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ======= HERO корпуса ======= -->
+  <div class="building-hero">
+    <a href="../index.html" class="building-hero-back">← Все корпуса</a>
+    <div class="building-hero-content">
+      <div class="building-hero-tag" id="b-tag">Загрузка...</div>
+      <h1 class="building-hero-title" id="b-title">Загрузка...</h1>
+      <div class="building-hero-addr" id="b-addr"></div>
+    </div>
+  </div>
+
+  <!-- ======= КОНТЕНТ корпуса ======= -->
+  <div class="building-content">
+
+    <!-- Бар с ключевыми фактами -->
+    <div class="building-facts-bar fade-up">
+      <div class="fact-item">
+        <div class="fact-label">Год постройки</div>
+        <div class="fact-value" id="b-year">—</div>
+      </div>
+      <div class="fact-item">
+        <div class="fact-label">Архитектурный стиль</div>
+        <div class="fact-value" id="b-style">—</div>
+      </div>
+      <div class="fact-item">
+        <div class="fact-label">В составе ИТМО с</div>
+        <div class="fact-value" id="b-joined">—</div>
+      </div>
+    </div>
+
+    <!-- Исторический текст -->
+    <div class="fade-up fade-up-delay-1">
+      <h2 class="building-history-title">История здания</h2>
+      <!-- Абзацы добавляются через JS -->
+      <div id="b-history"></div>
+    </div>
+
+    <!-- Мини-карта -->
+    <div class="building-map-section fade-up fade-up-delay-2">
+      <div id="building-map"></div>
+    </div>
+
+    <!-- Интересные факты -->
+    <div class="building-facts-list fade-up fade-up-delay-2">
+      <h3>Интересные факты</h3>
+      <ul id="b-facts-list">
+        <!-- Заполняется через JS -->
+      </ul>
+    </div>
+
+    <!-- Роль сегодня -->
+    <div class="role-block fade-up fade-up-delay-3">
+      <div class="role-icon">🏛</div>
+      <div>
+        <div class="role-label">Роль сегодня</div>
+        <div class="role-text" id="b-role">—</div>
+      </div>
+    </div>
+
+    <!-- Источники -->
+    <div class="sources-block fade-up fade-up-delay-3">
+      <h3>Источники и литература</h3>
+      <ol id="b-sources">
+        <!-- Заполняется через JS -->
+      </ol>
+    </div>
+
+    <!-- Нижняя навигация: пред/след корпус -->
+    <div class="building-nav-footer fade-up" id="building-nav">
+      <!-- Добавляется через JS -->
+    </div>
+
+  </div>
+
+  <!-- Скрипт страницы корпуса -->
+  <script src="../js/building.js"></script>
+
+</body>
+</html>
