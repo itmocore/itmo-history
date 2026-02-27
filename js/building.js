@@ -1,126 +1,237 @@
 /* ================================================
    building.js — скрипт для страниц отдельных корпусов
-   Читает ID из имени файла, загружает данные из JSON
+   Данные встроены напрямую (без fetch) для GitHub Pages
    ================================================ */
 
-async function loadBuildingPage() {
-  // Определяем ID корпуса из пути: buildings/kronverksky.html → kronverksky
-  const pathParts = window.location.pathname.split('/');
-  const fileName = pathParts[pathParts.length - 1].replace('.html', '');
-
-  try {
-    const res = await fetch('../data/buildings.json');
-    const buildings = await res.json();
-    const building = buildings.find(b => b.id === fileName);
-
-    if (!building) {
-      document.title = 'Корпус не найден — ИТМО';
-      document.body.innerHTML = '<p style="padding:80px 32px;text-align:center;font-family:sans-serif">Корпус не найден. <a href="../index.html">← На главную</a></p>';
-      return;
-    }
-
-    // Заполняем заголовок страницы
-    document.title = `${building.name} — История ИТМО`;
-
-    // Заполняем hero
-    document.getElementById('b-tag').textContent = building.address;
-    document.getElementById('b-title').textContent = building.name;
-    document.getElementById('b-addr').textContent = building.address;
-
-    // Факты в баре
-    document.getElementById('b-year').textContent = building.year;
-    document.getElementById('b-style').textContent = building.style;
-    document.getElementById('b-joined').textContent = building.joined;
-
-    // История
-    const historyEl = document.getElementById('b-history');
-    // Разбиваем по абзацам
-    building.history.split('\n\n').forEach(para => {
-      const p = document.createElement('p');
-      p.className = 'building-history-text';
-      p.textContent = para.trim();
-      historyEl.appendChild(p);
-    });
-
-    // Интересные факты
-    const factsList = document.getElementById('b-facts-list');
-    building.facts.forEach(fact => {
-      const li = document.createElement('li');
-      li.textContent = fact;
-      factsList.appendChild(li);
-    });
-
-    // Роль сегодня
-    document.getElementById('b-role').textContent = building.role;
-
-    // Источники
-    const sourcesList = document.getElementById('b-sources');
-    building.sources.forEach((src, i) => {
-      const li = document.createElement('li');
-      li.textContent = src;
-      sourcesList.appendChild(li);
-    });
-
-    // Мини-карта корпуса
-    if (typeof L !== 'undefined') {
-      const mapEl = document.getElementById('building-map');
-      if (mapEl) {
-        const map = L.map('building-map', {
-          center: [building.lat, building.lng],
-          zoom: 16,
-          zoomControl: true,
-          scrollWheelZoom: false
-        });
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-          attribution: '© OpenStreetMap © CARTO',
-          subdomains: 'abcd',
-          maxZoom: 19
-        }).addTo(map);
-        const icon = L.divIcon({
-          className: '',
-          html: `<div style="width:18px;height:18px;background:#1a4fd6;border:3px solid white;border-radius:50%;box-shadow:0 3px 12px rgba(26,79,214,0.5)"></div>`,
-          iconSize: [18, 18],
-          iconAnchor: [9, 9]
-        });
-        L.marker([building.lat, building.lng], { icon })
-          .addTo(map)
-          .bindPopup(building.address)
-          .openPopup();
-      }
-    }
-
-    // Навигация: предыдущий/следующий корпус
-    const idx = buildings.indexOf(building);
-    const prevB = buildings[idx - 1];
-    const nextB = buildings[idx + 1];
-    const navEl = document.getElementById('building-nav');
-    if (navEl) {
-      if (prevB) {
-        const prev = document.createElement('a');
-        prev.href = `${prevB.id}.html`;
-        prev.className = 'back-btn';
-        prev.innerHTML = `← ${prevB.name}`;
-        navEl.appendChild(prev);
-      } else {
-        navEl.appendChild(document.createElement('span'));
-      }
-      if (nextB) {
-        const next = document.createElement('a');
-        next.href = `${nextB.id}.html`;
-        next.className = 'back-btn';
-        next.innerHTML = `${nextB.name} →`;
-        navEl.appendChild(next);
-      }
-    }
-
-    // Анимации
-    setTimeout(() => {
-      document.querySelectorAll('.fade-up').forEach(el => el.classList.add('visible'));
-    }, 100);
-
-  } catch (e) {
-    console.error('Ошибка загрузки данных корпуса:', e);
+// Те же данные, что в main.js — дублируем, чтобы каждая страница была автономной
+var BUILDINGS = [
+  {
+    id: "kronverksky",
+    name: "Кронверкский корпус",
+    address: "Кронверкский пр., 49",
+    lat: 59.9569, lng: 30.3175,
+    year: 1900,
+    style: "Эклектика, неоклассицизм",
+    joined: 1930,
+    role: "Главный учебный корпус, администрация",
+    history: "Здание на Кронверкском проспекте, 49 является визитной карточкой университета ИТМО. Построенное в начале XX века, оно изначально предназначалось для нужд ремесленного образования в Санкт-Петербурге. Архитектурный облик здания сочетает черты позднего петербургского классицизма и нарождавшегося модерна — строгость фасадов смягчается изысканной лепниной и ритмом высоких окон.\n\nВ советский период здание претерпело функциональные изменения: его приспособили под нужды Ленинградского института точной механики и оптики, который впоследствии стал ИТМО. Постепенно корпус превратился в административный и учебный центр: здесь размещались деканаты, кафедры и ректорат.\n\nСегодня после масштабной реновации Кронверкский корпус сочетает историческую архитектуру с современной инфраструктурой: коворкинги, аудитории нового поколения и открытые общественные пространства делают его живым центром кампуса.",
+    facts: [
+      "Здание возведено в 1900–1906 годах по проекту петербургских архитекторов",
+      "Входит в список объектов культурного наследия Санкт-Петербурга",
+      "В холле корпуса установлены памятные доски выдающимся выпускникам ИТМО",
+      "В 2019 году проведена масштабная реконструкция фасада"
+    ],
+    sources: [
+      "Архивный фонд ИТМО, документы 1930–1950 гг.",
+      "Канцелярия Санкт-Петербургского городского архива",
+      "Энциклопедия «Архитектура Санкт-Петербурга», 2011"
+    ]
+  },
+  {
+    id: "lomonosova",
+    name: "Корпус на Ломоносова",
+    address: "ул. Ломоносова, 9",
+    lat: 59.9270, lng: 30.3370,
+    year: 1887,
+    style: "Петербургский классицизм, историзм",
+    joined: 1948,
+    role: "Физические и химические лаборатории",
+    history: "Улица Ломоносова расположена в самом сердце исторического Петербурга, и здание под номером 9 несёт в себе память о нескольких эпохах городской жизни. Первоначально возведённое во второй половине XIX века как доходный дом, оно отличается характерной для петербургского историзма строгостью фасада: рустованный цоколь, симметричные ризалиты и лаконичный карниз.\n\nПосле революции здание перешло в государственную собственность и долгое время использовалось для нужд различных учебных заведений. В конце 1940-х годов оно вошло в состав ЛИТМО: здесь разместились лаборатории физического факультета, а позднее — кафедры прикладной физики и фотоники.\n\nСейчас корпус прошёл техническую модернизацию, сохранив исторический облик. В отремонтированных аудиториях работают студенческие научные группы, а подвальные этажи переоборудованы под современные мастерские и fab-lab пространство.",
+    facts: [
+      "Построено в 1887 году как доходный дом петербургского купечества",
+      "В советское время являлось учебным корпусом нескольких вузов одновременно",
+      "В здании сохранились исторические парадные лестницы с чугунными перилами",
+      "Корпус расположен в пешей доступности от Государственного Эрмитажа"
+    ],
+    sources: [
+      "Петроградский городской архив, фонды 1900–1920 гг.",
+      "История ЛИТМО: хроника факультетов, 1990",
+      "Реестр памятников архитектуры Санкт-Петербурга"
+    ]
+  },
+  {
+    id: "birzhevaya",
+    name: "Биржевой корпус",
+    address: "Биржевая линия, 14",
+    lat: 59.9435, lng: 30.2900,
+    year: 1912,
+    style: "Северный модерн, промышленная эклектика",
+    joined: 1962,
+    role: "Информационные технологии и вычислительная техника",
+    history: "Биржевая линия Васильевского острова — одна из старейших улиц города, связанных с торговлей и промышленностью. Здание под номером 14 было возведено в 1912 году как складской и конторский комплекс для нужд петербургских купцов, ведущих дела через биржу.\n\nАрхитектура постройки отражает типичный для промышленного северного модерна синтез: гранитный цоколь, широкие фасадные проёмы для естественного освещения, сдержанный декор с геометрическими мотивами. После революции здание использовалось как склад и жилой корпус, прежде чем попасть в ведение ЛИТМО в начале 1960-х годов.\n\nС 1962 года здесь размещались вычислительные центры — сначала с ламповыми ЭВМ, а затем с транзисторными машинами серий БЭСМ и ЕС ЭВМ. Сегодня бывшие машинные залы преобразованы в современные дата-классы и открытые лаборатории для студентов направления «Информационные системы».",
+    facts: [
+      "В 1960-х здесь располагался один из первых вузовских вычислительных центров Ленинграда",
+      "Высокие потолки бывших складов позволили разместить стойки с ЭВМ без реконструкции",
+      "Васильевский остров — исторический научный центр Петербурга, здесь расположена РАН",
+      "В 2015 году корпус получил статус объекта индустриального наследия"
+    ],
+    sources: [
+      "Музей истории ИТМО, экспозиция «Вычислительная техника ЛИТМО»",
+      "Архивы Ленгорисполкома, фонды 1960–1970 гг.",
+      "Г. Г. Андреев. «Архитектура Васильевского острова». СПб., 2003"
+    ]
+  },
+  {
+    id: "grivtsova",
+    name: "Корпус на Гривцова",
+    address: "пер. Гривцова, 14",
+    lat: 59.9295, lng: 30.3172,
+    year: 1898,
+    style: "Доходный дом, петербургская эклектика",
+    joined: 1955,
+    role: "Гуманитарные дисциплины и иностранные языки",
+    history: "Переулок Гривцова — один из многочисленных тихих петербургских переулков, соединяющих шумные магистрали с дворами-колодцами. Дом 14 построен в конце XIX века как доходный дом средней руки: без парадной роскоши, но с характерной петербургской добротностью — толстые стены из кирпича, дворовые флигели, высокие потолки.\n\nВ советский период помещения сменили множество владельцев, пока в середине 1950-х годов здание не перешло к ЛИТМО. Его компактность оказалась удобной для кафедр, которым не требовались большие лабораторные площади: сначала здесь работала кафедра иностранных языков, позднее добавились кафедра философии и социальных наук.\n\nСегодня корпус специализируется на гуманитарной составляющей технического образования: языковые классы оснащены современным мультимедиа-оборудованием, а небольшой конференц-зал используется для международных встреч и студенческих дебатов.",
+    facts: [
+      "Один из немногих корпусов ИТМО, расположенных во внутреннем переулке исторического центра",
+      "В здании сохранились оригинальные кирпичные своды подвального этажа",
+      "Кафедра иностранных языков работает в этом корпусе с 1957 года",
+      "В 2020 году проведена полная замена оконных блоков с сохранением исторических пропорций"
+    ],
+    sources: [
+      "Протоколы заседаний ректората ЛИТМО, 1955–1960 гг.",
+      "Справочник «Улицы и переулки Центрального района СПб», 2008",
+      "Личные воспоминания сотрудников кафедры иностранных языков ИТМО"
+    ]
+  },
+  {
+    id: "tchaikovsky",
+    name: "Корпус Чайковского",
+    address: "ул. Чайковского, 11",
+    lat: 59.9472, lng: 30.3601,
+    year: 1875,
+    style: "Петербургский классицизм, историзм",
+    joined: 1971,
+    role: "Оптика, фотоника и нанотехнологии",
+    history: "Улица Чайковского пролегает через один из наиболее аристократических районов Петербурга — Литейную часть. Здание номер 11 было возведено в 1875 году и первоначально принадлежало состоятельному петербургскому семейству как городская усадьба. Архитектура постройки отличается академической строгостью: рустованный фасад, высокие арочные окна бельэтажа, кованые ограды.\n\nВ начале XX века дом был приспособлен под нужды учебных заведений. После 1917 года он использовался различными организациями, а в 1971 году был передан ЛИТМО. Выбор оказался символичным: именно здесь развернулись ключевые исследования по лазерной физике и голографии, благодаря которым ИТМО завоевал международное признание.\n\nСегодня корпус является одним из ведущих исследовательских центров в области фотоники и нанотехнологий. Здесь работают лаборатории мирового уровня, сотрудничающие с European Photonics Industry Consortium, а студенты получают доступ к уникальному научному оборудованию.",
+    facts: [
+      "В 1980-х здесь была создана одна из первых в СССР голографических лабораторий",
+      "Корпус стал базой для научных публикаций ИТМО в рейтинге Nature Index",
+      "Высокие потолки бельэтажа позволяют размещать крупные оптические стенды",
+      "В 2018 году установлен чистый класс ISO 6 для нанотехнологических исследований"
+    ],
+    sources: [
+      "Архив лаборатории фотоники ИТМО, публикации 1980–2000 гг.",
+      "Реестр объектов культурного наследия Санкт-Петербурга, номер 7810521",
+      "И. В. Мегорский. «Литейная часть: архитектурный облик». СПб., 2006"
+    ]
   }
+];
+
+function loadBuildingPage() {
+  // Определяем ID корпуса из пути: /buildings/kronverksky.html → kronverksky
+  var pathParts = window.location.pathname.split('/');
+  var fileName = pathParts[pathParts.length - 1].replace('.html', '');
+
+  var building = null;
+  for (var i = 0; i < BUILDINGS.length; i++) {
+    if (BUILDINGS[i].id === fileName) { building = BUILDINGS[i]; break; }
+  }
+
+  if (!building) {
+    document.title = 'Корпус не найден — ИТМО';
+    return;
+  }
+
+  // Заголовок вкладки
+  document.title = building.name + ' — История ИТМО';
+
+  // Hero
+  document.getElementById('b-tag').textContent = building.address;
+  document.getElementById('b-title').textContent = building.name;
+  document.getElementById('b-addr').textContent = building.address;
+
+  // Факты-бар
+  document.getElementById('b-year').textContent = building.year;
+  document.getElementById('b-style').textContent = building.style;
+  document.getElementById('b-joined').textContent = building.joined;
+
+  // История: разбиваем по пустым строкам на абзацы
+  var historyEl = document.getElementById('b-history');
+  var paragraphs = building.history.split('\n\n');
+  paragraphs.forEach(function(para) {
+    var p = document.createElement('p');
+    p.className = 'building-history-text';
+    p.textContent = para.trim();
+    historyEl.appendChild(p);
+  });
+
+  // Факты
+  var factsList = document.getElementById('b-facts-list');
+  building.facts.forEach(function(fact) {
+    var li = document.createElement('li');
+    li.textContent = fact;
+    factsList.appendChild(li);
+  });
+
+  // Роль сегодня
+  document.getElementById('b-role').textContent = building.role;
+
+  // Источники
+  var sourcesList = document.getElementById('b-sources');
+  building.sources.forEach(function(src) {
+    var li = document.createElement('li');
+    li.textContent = src;
+    sourcesList.appendChild(li);
+  });
+
+  // Мини-карта корпуса
+  if (typeof L !== 'undefined') {
+    var mapEl = document.getElementById('building-map');
+    if (mapEl) {
+      var map = L.map('building-map', {
+        center: [building.lat, building.lng],
+        zoom: 16,
+        zoomControl: true,
+        scrollWheelZoom: false
+      });
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors © CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }).addTo(map);
+      var icon = L.divIcon({
+        className: '',
+        html: '<div style="width:18px;height:18px;background:#1a4fd6;border:3px solid white;border-radius:50%;box-shadow:0 3px 12px rgba(26,79,214,0.5)"></div>',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+      });
+      L.marker([building.lat, building.lng], { icon: icon })
+        .addTo(map)
+        .bindPopup(building.address)
+        .openPopup();
+    }
+  }
+
+  // Навигация: предыдущий/следующий корпус
+  var idx = BUILDINGS.indexOf(building);
+  var prevB = BUILDINGS[idx - 1];
+  var nextB = BUILDINGS[idx + 1];
+  var navEl = document.getElementById('building-nav');
+  if (navEl) {
+    if (prevB) {
+      var prev = document.createElement('a');
+      prev.href = prevB.id + '.html';
+      prev.className = 'back-btn';
+      prev.innerHTML = '← ' + prevB.name;
+      navEl.appendChild(prev);
+    } else {
+      navEl.appendChild(document.createElement('span'));
+    }
+    if (nextB) {
+      var next = document.createElement('a');
+      next.href = nextB.id + '.html';
+      next.className = 'back-btn';
+      next.innerHTML = nextB.name + ' →';
+      navEl.appendChild(next);
+    }
+  }
+
+  // Показываем все анимированные элементы
+  setTimeout(function() {
+    document.querySelectorAll('.fade-up').forEach(function(el) {
+      el.classList.add('visible');
+    });
+  }, 100);
 }
 
 document.addEventListener('DOMContentLoaded', loadBuildingPage);
